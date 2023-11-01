@@ -2,7 +2,7 @@
 from abc import ABCMeta, abstractmethod
 
 from mmcv.runner import BaseModule
-from torch import nn
+
 from ..builder import build_shared_head
 
 
@@ -33,8 +33,7 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
             self.init_mask_head(mask_roi_extractor, mask_head)
 
         self.init_assigner_sampler()
-        self.region = nn.Sequential(nn.Conv2d(256, 64, kernel_size=(
-            7, 7), stride=1, padding=(0, 0), bias=False), nn.Flatten(), nn.Linear(64, 512))
+
     @property
     def with_bbox(self):
         """bool: whether the RoI head contains a `bbox_head`"""

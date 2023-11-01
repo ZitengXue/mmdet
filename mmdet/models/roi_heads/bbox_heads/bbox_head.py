@@ -56,7 +56,6 @@ class BBoxHead(BaseModule):
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
-        self.loss_clip = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
 
         in_channels = self.in_channels
@@ -192,7 +191,6 @@ class BBoxHead(BaseModule):
                     gt_bboxes,
                     gt_labels,
                     rcnn_train_cfg,
-                    text_embedding=None,
                     concat=True):
         """Calculate the ground truth for all samples in a batch according to
         the sampling_results.
@@ -258,7 +256,6 @@ class BBoxHead(BaseModule):
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def loss(self,
              cls_score,
-             region_score,
              bbox_pred,
              rois,
              labels,
@@ -276,19 +273,10 @@ class BBoxHead(BaseModule):
                     label_weights,
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
-                loss_clip_ = 0.5*self.loss_clip(
-                    region_score,
-                    labels,
-                    label_weights,
-                    avg_factor=avg_factor,
-                    reduction_override=reduction_override
-                )
                 if isinstance(loss_cls_, dict):
                     losses.update(loss_cls_)
-                    losses.update(loss_clip_)
                 else:
                     losses['loss_cls'] = loss_cls_
-                    losses['loss_clip'] = loss_clip_
                 if self.custom_activation:
                     acc_ = self.loss_cls.get_accuracy(cls_score, labels)
                     losses.update(acc_)
