@@ -88,14 +88,16 @@ class TwoStageDetector(BaseDetector):
         return outs
 
     def forward_train(self,
-                      img,
-                      img_metas,
-                      gt_bboxes,
-                      gt_labels,
-                      gt_bboxes_ignore=None,
-                      gt_masks=None,
-                      proposals=None,
-                      **kwargs):
+                        feat,
+                        img,
+                        img_metas,
+                        gt_bboxes,
+                        gt_labels,
+                        gt_bboxes_ignore=None,
+                        text_embedding=None,
+                        gt_masks=None,
+                        proposals=None,
+                        **kwargs):
         """
         Args:
             img (Tensor): of shape (N, C, H, W) encoding input images.
@@ -146,7 +148,7 @@ class TwoStageDetector(BaseDetector):
 
         roi_losses = self.roi_head.forward_train(x, img_metas, proposal_list,
                                                  gt_bboxes, gt_labels,
-                                                 gt_bboxes_ignore, gt_masks,
+                                                 gt_bboxes_ignore, gt_masks,text_embedding,
                                                  **kwargs)
         losses.update(roi_losses)
 

@@ -36,6 +36,12 @@ class BBoxHead(BaseModule):
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
                      loss_weight=1.0),
+                loss_clip=dict(
+                    type='FocalLoss',
+                    use_sigmoid=True,
+                    gamma=2.0,
+                    alpha=0.25,
+                    loss_weight=1.0),
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
                  init_cfg=None):
@@ -56,6 +62,7 @@ class BBoxHead(BaseModule):
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
+        self.loss_clip = build_loss(loss_clip)
         self.loss_bbox = build_loss(loss_bbox)
 
         in_channels = self.in_channels
@@ -191,6 +198,7 @@ class BBoxHead(BaseModule):
                     gt_bboxes,
                     gt_labels,
                     rcnn_train_cfg,
+                    text_embedding=None,
                     concat=True):
         """Calculate the ground truth for all samples in a batch according to
         the sampling_results.
@@ -273,10 +281,25 @@ class BBoxHead(BaseModule):
                     label_weights,
                     avg_factor=avg_factor,
                     reduction_override=reduction_override)
+                # loss_clip_ = self.loss_clip(
+                #     region_score,
+                #     labels,
+                #     label_weights,
+                #     avg_factor=avg_factor,
+                #     reduction_override=reduction_override
+                # )
+                loss_dict=dict()
+                loss_dict['labels']=labels
+                loss_dict['label_weights']=label_weights
+                loss_dict['avg_factor']=avg_factor
+                loss_dict['reduction_override']=reduction_override
+                
                 if isinstance(loss_cls_, dict):
                     losses.update(loss_cls_)
+                    # losses.update(loss_clip_)
                 else:
                     losses['loss_cls'] = loss_cls_
+                    # losses['loss_clip'] = loss_clip_
                 if self.custom_activation:
                     acc_ = self.loss_cls.get_accuracy(cls_score, labels)
                     losses.update(acc_)
@@ -310,7 +333,7 @@ class BBoxHead(BaseModule):
                     reduction_override=reduction_override)
             else:
                 losses['loss_bbox'] = bbox_pred[pos_inds].sum()
-        return losses
+        return losses,loss_dict
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def get_bboxes(self,
